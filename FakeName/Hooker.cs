@@ -10,7 +10,6 @@ using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -29,19 +28,19 @@ public class Hooker
 
     public static List<(string[], string)> Replacement { get; private set; } = [];
 
-    internal unsafe Hooker()
+    internal Hooker()
     {
         Service.Hook.InitializeFromAttributes(this);
 
         AtkTextNodeSetTextHook?.Enable();
 
-        Service.NamePlate.OnDataUpdate += NamePlate_OnDataUpdate;
+        Service.NamePlate.OnDataUpdate += OnNamePlateDataUpdate;
 
-        Service.Framework.Update += Framework_Update;
-        Service.ClientState.Login += ClientState_Login;
+        Service.Framework.Update += OnUpdate;
+        Service.ClientState.Login += OnLogin;
     }
 
-    private void NamePlate_OnDataUpdate(INamePlateUpdateContext context, IReadOnlyList<INamePlateUpdateHandler> handlers)
+    private static void OnNamePlateDataUpdate(INamePlateUpdateContext context, IReadOnlyList<INamePlateUpdateHandler> handlers)
     {
         if (!Service.Config.Enabled) return;
 
@@ -85,26 +84,19 @@ public class Hooker
         {
             return Service.Config.FakeNameText;
         }
-        else if (Service.Config.AllPlayerReplace)
-        {
-            return GetChangedName(str);
-        }
-        else
-        {
-            return str;
-        }
+        return Service.Config.AllPlayerReplace ? GetChangedName(str) : str;
     }
 
-    public unsafe void Dispose()
+    public void Dispose()
     {
         AtkTextNodeSetTextHook?.Dispose();
-        Service.NamePlate.OnDataUpdate -= NamePlate_OnDataUpdate;
+        Service.NamePlate.OnDataUpdate -= OnNamePlateDataUpdate;
 
-        Service.Framework.Update -= Framework_Update;
-        Service.ClientState.Login -= ClientState_Login;
+        Service.Framework.Update -= OnUpdate;
+        Service.ClientState.Login -= OnLogin;
     }
 
-    private void ClientState_Login()
+    private static void OnLogin()
     {
         var player = Service.ClientState.LocalPlayer;
         if (player == null) return;
@@ -116,34 +108,12 @@ public class Hooker
         }
     }
 
-    private static bool IsRunning = false;
-    public static bool IsStreaming { get; set; } = false;
-    private static DateTime LastCheck = DateTime.MinValue;
-    private static readonly string[] AppEqualNames =
-    [
-        "obs32",
-        "obs64",
-    ];
-    private static readonly string[] AppStartNames =
-    [
-        "XSplit",
-    ];
-    private unsafe void Framework_Update(IFramework framework)
+    private static unsafe void OnUpdate(IFramework framework)
     {
         var replacements = new List<(string[], string)>();
 
         try
         {
-            if ((DateTime.Now - LastCheck).TotalSeconds > 1)
-            {
-                LastCheck = DateTime.Now;
-
-                var processes = Process.GetProcesses();
-                IsStreaming = processes.Any(x =>
-                AppStartNames.Any(n => x.ProcessName.StartsWith(n, StringComparison.OrdinalIgnoreCase))
-                || AppEqualNames.Any(n => x.ProcessName.Equals(n, StringComparison.OrdinalIgnoreCase)));
-            }
-
             var player = Service.ClientState.LocalPlayer;
 
             if (player != null)
@@ -187,6 +157,7 @@ public class Hooker
             if (friendList == null) return;
 
             var list = friendList->FriendList;
+            if (list == null) return;
             for (var i = 0; i < list->ListLength; i++)
             {
                 var item = list->ItemRendererList[i];
@@ -202,7 +173,6 @@ public class Hooker
         finally
         {
             Replacement = replacements;
-            IsRunning = false;
         }
     }
 
@@ -214,44 +184,6 @@ public class Hooker
             return;
         }
         AtkTextNodeSetTextHook?.Original(node, ChangeName(text));
-    }
-
-    private unsafe void SetNamePlateDetour(IntPtr namePlateObjectPtr, bool isPrefixTitle,
-        bool displayTitle, IntPtr titlePtr, IntPtr namePtr, IntPtr fcNamePtr, IntPtr prefix, int iconId)
-    {
-        try
-        {
-            if (Service.Config.Enabled)
-            {
-                var nameSe = GetSeStringFromPtr(namePtr).TextValue;
-                if (Service.ClientState.LocalPlayer != null && GetNamesFull(Service.ClientState.LocalPlayer.Name.TextValue).Contains(nameSe))
-                {
-                    GetPtrFromSeString(Service.Config.FakeNameText, namePtr);
-                }
-                else if (Service.Config.AllPlayerReplace)
-                {
-                    GetPtrFromSeString(GetChangedName(nameSe), namePtr);
-                }
-
-                if (Service.Config.FCNameReplace)
-                {
-                    nameSe = GetSeStringFromPtr(fcNamePtr).TextValue;
-                    foreach ((var key, var value) in Service.Config.FCNameDict)
-                    {
-                        if (key != nameSe) continue;
-                        GetPtrFromSeString(value, fcNamePtr);
-                        break;
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Service.Log.Error(ex, "Failed to change name plate");
-        }
-
-        //SetNamePlateHook?.Original(namePlateObjectPtr, isPrefixTitle, displayTitle,
-        //    titlePtr, namePtr, fcNamePtr, prefix, iconId);
     }
 
     private static string[] GetNamesFull(string name)
@@ -339,8 +271,7 @@ public class Hooker
             if (key == str) return value;
         }
         var lt = str.Split(' ');
-        if (lt.Length != 2) return str;
-        return string.Join(" . ", lt.Select(s => s.ToUpper().FirstOrDefault()));
+        return lt.Length != 2 ? str : string.Join(" . ", lt.Select(s => s.ToUpper().FirstOrDefault()));
     }
 
     private static bool ReplacePlayerName(SeString text, IEnumerable<string> names, string replacement)

@@ -1,11 +1,10 @@
 {
-    "Author": "ArchiTed",
+    "Author": "ArchiTed, KirisameVanilla",
     "Name": "Fake Name",
     "InternalName": "FakeName",
-    "Description":
-    "Fake name is a Dalamud plugin that visually changes the player's name to whatever someone wants in order to provide anonymity while streaming, recording videos or taking pictures.\nIt's really easy to use and set up, /fakename opens up the settings window\n\nIf it messed up your chat box, please use chat2!",
+    "Description": "Visually changes the player's name.",
     "ApplicableVersion": "any",
-    "RepoUrl": "https://github.com/ArchiDog1998/FakeName",
+    "RepoUrl": "https://github.com/KirisameVanilla/FakeName",
     "Tags": [
         "name",
         "ui"
@@ -18,7 +17,7 @@
     "LoadSync": false,
     "CanUnloadAsync": false,
     "LoadPriority": 0,
-    "IconUrl": "https://raw.githubusercontent.com/ArchiDog1998/FakeName/main/icon.png",
+    "IconUrl": "https://raw.githubusercontent.com/KirisameVanilla/FakeName/main/icon.png",
     "Punchline": "Show a fake name on your game ui.",
     "AcceptsFeedback": true
 }
