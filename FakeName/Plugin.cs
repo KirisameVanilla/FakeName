@@ -9,7 +9,7 @@ public class Plugin : IDalamudPlugin
 {
     internal Hooker Hooker { get; }
     internal ConfigUi ConfigUi;
-    private static readonly string Command = "/fn";
+    private const string Command = "/fn";
 
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
@@ -20,7 +20,7 @@ public class Plugin : IDalamudPlugin
         ConfigUi = new ConfigUi();
         Service.CommandManager.AddHandler(Command, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Open a config window about fake name."
+            HelpMessage = "Open config window."
         });
     }
 

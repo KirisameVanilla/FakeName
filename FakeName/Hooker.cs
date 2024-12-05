@@ -57,7 +57,7 @@ public class Hooker
                     }
 
                     var nameSe = handler.FreeCompanyTag.TextValue;
-                    foreach ((var key, var value) in Service.Config.FCNameDict)
+                    foreach (var(key, value) in Service.Config.FreeCompanyNameDict)
                     {
                         if (key != nameSe) continue;
                         handler.FreeCompanyTag = value;
@@ -101,9 +101,8 @@ public class Hooker
         var player = Service.ClientState.LocalPlayer;
         if (player == null) return;
 
-        if (!Service.Config.CharacterNames.Contains(player.Name.TextValue))
+        if (Service.Config.CharacterNames.Add(player.Name.TextValue))
         {
-            Service.Config.CharacterNames.Add(player.Name.TextValue);
             Service.Config.SaveConfig();
         }
     }
@@ -121,7 +120,7 @@ public class Hooker
                 replacements.Add((GetNamesFull(player.Name.TextValue), Service.Config.FakeNameText));
             }
 
-            foreach ((var key, var value) in Service.Config.NameDict)
+            foreach (var(key, value) in Service.Config.NameDict)
             {
                 replacements.Add((new string[] { key }, value));
             }
@@ -266,7 +265,7 @@ public class Hooker
     {
         if (string.IsNullOrEmpty(str)) return str;
 
-        foreach ((var key, var value) in Service.Config.NameDict)
+        foreach (var(key, value) in Service.Config.NameDict)
         {
             if (key == str) return value;
         }

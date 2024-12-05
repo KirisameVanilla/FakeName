@@ -17,7 +17,7 @@ public class Configuration : IPluginConfiguration
     public HashSet<string> FriendList = [];
 
     public List<(string, string)> NameDict = [];
-    public List<(string, string)> FCNameDict = [];
+    public List<(string, string)> FreeCompanyNameDict = [];
     internal void SaveConfig()
     {
         Service.PluginInterface.SavePluginConfig(this);

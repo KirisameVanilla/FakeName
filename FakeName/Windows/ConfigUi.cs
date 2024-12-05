@@ -40,7 +40,7 @@ public class ConfigUi : IDisposable
         else return;
 
         if (Service.Config.Enabled
-            && ImGui.BeginTabBar("tabbar", ImGuiTabBarFlags.Reorderable | ImGuiTabBarFlags.AutoSelectNewTabs))
+            && ImGui.BeginTabBar("tabBar", ImGuiTabBarFlags.Reorderable))
         {
                 if (ImGui.BeginTabItem("Settings"))
                 {
@@ -77,13 +77,10 @@ public class ConfigUi : IDisposable
                     ImGui.EndTabItem();
                 }
 
-                if (ImGui.BeginTabItem("FC Names"))
+                if (Service.Config.FreeCompanyNameReplace && ImGui.BeginTabItem("FC Names"))
                 {
-                    if (Service.Config.FreeCompanyNameReplace)
-                    {
-                        ImGui.TextWrapped("The FC replacement only effect on the nameplate.");
-                        DrawList(Service.Config.FCNameDict);
-                    }
+                    ImGui.TextWrapped("The FC replacement only effect on the nameplate.");
+                    DrawList(Service.Config.FreeCompanyNameDict);
                     ImGui.EndTabItem();
                     
                 }
@@ -121,10 +118,8 @@ public class ConfigUi : IDisposable
             var changedIndex = -1;
 
             var changedValue = (string.Empty, string.Empty);
-            foreach (var pair in data)
+            foreach (var(key, value) in data)
             {
-                var key = pair.Item1;
-                var value = pair.Item2;
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
@@ -146,7 +141,7 @@ public class ConfigUi : IDisposable
                 ImGui.TableNextColumn();
 
                 ImGui.PushFont(UiBuilder.IconFont);
-                var result = ImGui.Button(FontAwesomeIcon.Ban.ToIconString() + $"##Remove NameDict Key{index}");
+                var result = ImGui.Button(FontAwesomeIcon.TrashAlt.ToIconString() + $"##Remove NameDict Key{index}");
                 ImGui.PopFont();
 
                 if (result)
