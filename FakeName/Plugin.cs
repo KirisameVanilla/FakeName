@@ -27,7 +27,7 @@ public class Plugin : IDalamudPlugin
     public void Dispose()
     {
         Hooker.Dispose();
-
+        Service.CommandManager.RemoveHandler(Command);
         GC.SuppressFinalize(this);
     }
 
