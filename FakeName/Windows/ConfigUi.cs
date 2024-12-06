@@ -45,7 +45,7 @@ public class ConfigUi : IDisposable
                 if (ImGui.BeginTabItem("Settings"))
                 {
                     var allPlayerReplace = Service.Config.AllPlayerReplace;
-                    if (ImGui.Checkbox("Change All Player's Name", ref allPlayerReplace))
+                    if (ImGui.Checkbox("Change All Player's Name To Abbr.\n(Only works for SE server)", ref allPlayerReplace))
                     {
                         Service.Config.AllPlayerReplace = allPlayerReplace;
                         Service.Config.SaveConfig();

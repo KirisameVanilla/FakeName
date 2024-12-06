@@ -4,6 +4,7 @@ using Dalamud.Game.Gui.NamePlate;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
+using Dalamud.Game;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.UI;
@@ -125,7 +126,9 @@ public class Hooker
                 replacements.Add((new string[] { key }, value));
             }
 
-            if (!Service.Config.AllPlayerReplace) return;
+            if (Service.ClientState.ClientLanguage == (ClientLanguage) 4 
+                || !Service.Config.AllPlayerReplace) 
+                return;
 
             foreach (var obj in Service.ObjectTable)
             {
