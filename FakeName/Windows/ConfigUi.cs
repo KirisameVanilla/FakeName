@@ -28,7 +28,7 @@ public class ConfigUi : IDisposable
     {
         if (!Visible) return;
         var enabled = Service.Config.Enabled;
-        if (ImGui.Begin("FakeName Config"))
+        if (ImGui.Begin("FakeName Config", ImGuiWindowFlags.AlwaysAutoResize))
         {
             ImGui.SetNextWindowSize(new Vector2(480f, 640f), ImGuiCond.FirstUseEver);
             if (ImGui.Checkbox("Enabled", ref enabled))
