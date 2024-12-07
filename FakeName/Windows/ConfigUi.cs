@@ -40,51 +40,62 @@ public class ConfigUi : IDisposable
         else return;
 
         if (Service.Config.Enabled
-            && ImGui.BeginTabBar("tabBar", ImGuiTabBarFlags.Reorderable))
+            && ImGui.BeginTabBar("##tabBar", ImGuiTabBarFlags.Reorderable))
         {
-                if (ImGui.BeginTabItem("Settings"))
+            if (ImGui.BeginTabItem("Settings"))
+            {
+                var fakeNameText = Service.Config.FakeNameText;
+                ImGui.Text("Character Name");
+
+                if (Service.ClientState.LocalPlayer is not null)
                 {
-                    var allPlayerReplace = Service.Config.AllPlayerReplace;
-                    if (ImGui.Checkbox("Change All Player's Name To Abbr.\n(Only works for SE server)", ref allPlayerReplace))
+                    ImGui.SameLine();
+                    if (ImGui.Button("Reset To Default##Reset Character Name"))
                     {
-                        Service.Config.AllPlayerReplace = allPlayerReplace;
+                        Service.Config.FakeNameText = Service.ClientState.LocalPlayer.Name.TextValue;
                         Service.Config.SaveConfig();
                     }
-
-                    var fakeNameText = Service.Config.FakeNameText;
-                    if (ImGui.InputText("Character Name", ref fakeNameText, 256))
-                    {
-                        Service.Config.FakeNameText = fakeNameText;
-                        Service.Config.SaveConfig();
-                    }
-
-                    var fcNameReplace = Service.Config.FreeCompanyNameReplace;
-                    if (ImGui.Checkbox("Change FC Names", ref fcNameReplace))
-                    {
-                        Service.Config.FreeCompanyNameReplace = fcNameReplace;
-                        Service.Config.SaveConfig();
-                    }
-                    ImGui.EndTabItem();
                 }
 
-                if (ImGui.BeginTabItem("Player Names"))
+                if (ImGui.InputText("##Character Name", ref fakeNameText, 256))
                 {
-                    if (Service.Config.Enabled)
-                    {
-                        DrawList(Service.Config.NameDict);
-                    }
-
-                    ImGui.EndTabItem();
+                    Service.Config.FakeNameText = fakeNameText;
+                    Service.Config.SaveConfig();
                 }
 
-                if (Service.Config.FreeCompanyNameReplace && ImGui.BeginTabItem("FC Names"))
+                var allPlayerReplace = Service.Config.AllPlayerReplace;
+                if (ImGui.Checkbox("Change All Player's Name To Abbr.\n(Only works for SE server)", ref allPlayerReplace))
                 {
-                    ImGui.TextWrapped("The FC replacement only effect on the nameplate.");
-                    DrawList(Service.Config.FreeCompanyNameDict);
-                    ImGui.EndTabItem();
-                    
+                    Service.Config.AllPlayerReplace = allPlayerReplace;
+                    Service.Config.SaveConfig();
                 }
-                ImGui.EndTabBar();
+
+                var fcNameReplace = Service.Config.FreeCompanyNameReplace;
+                if (ImGui.Checkbox("Change FC Names", ref fcNameReplace))
+                {
+                    Service.Config.FreeCompanyNameReplace = fcNameReplace;
+                    Service.Config.SaveConfig();
+                }
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem("Player Names"))
+            {
+                if (Service.Config.Enabled)
+                {
+                    DrawList(Service.Config.NameDict);
+                }
+
+                ImGui.EndTabItem();
+            }
+
+            if (Service.Config.FreeCompanyNameReplace && ImGui.BeginTabItem("FC Names"))
+            {
+                ImGui.TextWrapped("The FC replacement only effect on the nameplate.");
+                DrawList(Service.Config.FreeCompanyNameDict);
+                ImGui.EndTabItem();
+            }
+            ImGui.EndTabBar();
         }
     }
 

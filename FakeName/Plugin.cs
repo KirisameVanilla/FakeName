@@ -31,8 +31,5 @@ public class Plugin : IDalamudPlugin
         GC.SuppressFinalize(this);
     }
 
-    private void OnCommand(string command, string args)
-    {
-        ConfigUi.Visible ^= true;
-    }
+    private void OnCommand(string command, string args) => ConfigUi.Visible ^= true;
 }
