@@ -4,40 +4,35 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Interface.Windowing;
 
 namespace FakeName.Windows;
 
-public class ConfigUi : IDisposable
+public class ConfigUi : Window, IDisposable
 {
-    public bool Visible;
+
     public ConfigUi()
+        : base("FakeName##Config", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
-        Service.PluginInterface.UiBuilder.OpenConfigUi += OnOpenUi;
-        Service.PluginInterface.UiBuilder.OpenMainUi += OnOpenUi;
-        Service.PluginInterface.UiBuilder.Draw += DrawConfig;
-    }
-
-    public void Dispose()
-    {
-        Service.PluginInterface.UiBuilder.OpenConfigUi -= OnOpenUi;
-        Service.PluginInterface.UiBuilder.OpenMainUi -= OnOpenUi;
-        Service.PluginInterface.UiBuilder.Draw -= DrawConfig;
-    }
-
-    private void DrawConfig()
-    {
-        if (!Visible) return;
-        var enabled = Service.Config.Enabled;
-        if (ImGui.Begin("FakeName Config", ImGuiWindowFlags.AlwaysAutoResize))
+        SizeConstraints = new WindowSizeConstraints
         {
-            ImGui.SetNextWindowSize(new Vector2(480f, 640f), ImGuiCond.FirstUseEver);
-            if (ImGui.Checkbox("Enabled", ref enabled))
-            {
-                Service.Config.Enabled = enabled;
-                Service.Config.SaveConfig();
-            }
+            MinimumSize = new Vector2(480f, 320f),
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
+        };
+    }
+
+    public void Dispose() { }
+
+    public override void Draw()
+    {
+        var enabled = Service.Config.Enabled;
+
+        if (ImGui.Checkbox("Enabled", ref enabled))
+        {
+            Service.Config.Enabled = enabled;
+            Service.Config.SaveConfig();
         }
-        else return;
+
 
         if (Service.Config.Enabled
             && ImGui.BeginTabBar("##tabBar", ImGuiTabBarFlags.Reorderable))
@@ -45,7 +40,7 @@ public class ConfigUi : IDisposable
             if (ImGui.BeginTabItem("Settings"))
             {
                 var fakeNameText = Service.Config.FakeNameText;
-                ImGui.Text("Character Name");
+                ImGui.Text("Local Character Name");
 
                 if (Service.ClientState.LocalPlayer is not null)
                 {
@@ -176,5 +171,4 @@ public class ConfigUi : IDisposable
             }
         }
     }
-    private void OnOpenUi() => Visible ^= true;
 }
