@@ -27,7 +27,7 @@ public class Hooker
     [Signature("E8 ?? ?? ?? ?? 8D 4E 32", DetourName = nameof(AtkTextNodeSetTextDetour))]
     private Hook<AtkTextNodeSetTextDelegate>? AtkTextNodeSetTextHook { get; init; }
 
-    public static List<(string[], string)> Replacement { get; private set; } = [];
+    public static Dictionary<string, string> Replacement { get; private set; } = [];
 
     internal Hooker()
     {
@@ -38,7 +38,6 @@ public class Hooker
         Service.NamePlate.OnDataUpdate += OnNamePlateDataUpdate;
 
         Service.Framework.Update += OnUpdate;
-        Service.ClientState.Login += OnLogin;
     }
 
     private static void OnNamePlateDataUpdate(INamePlateUpdateContext context, IReadOnlyList<INamePlateUpdateHandler> handlers)
@@ -81,11 +80,11 @@ public class Hooker
 
     private static string ReplaceNameplate(string str)
     {
-        if (Service.ClientState.LocalPlayer != null && GetNamesFull(Service.ClientState.LocalPlayer.Name.TextValue).Contains(str))
+        if (Service.ClientState.LocalPlayer != null && Service.ClientState.LocalPlayer.Name.TextValue.Contains(str))
         {
             return Service.Config.FakeNameText;
         }
-        return Service.Config.AllPlayerReplace ? GetChangedName(str) : str;
+        return Service.Config.ReplaceAllPlayer ? GetChangedName(str) : str;
     }
 
     public void Dispose()
@@ -94,40 +93,32 @@ public class Hooker
         Service.NamePlate.OnDataUpdate -= OnNamePlateDataUpdate;
 
         Service.Framework.Update -= OnUpdate;
-        Service.ClientState.Login -= OnLogin;
-    }
-
-    private static void OnLogin()
-    {
-        var player = Service.ClientState.LocalPlayer;
-        if (player == null) return;
-
-        if (Service.Config.CharacterNames.Add(player.Name.TextValue))
-        {
-            Service.Config.SaveConfig();
-        }
     }
 
     private static unsafe void OnUpdate(IFramework framework)
     {
-        var replacements = new List<(string[], string)>();
+        if (!Service.Config.Enabled) return;
+
+        var replacements = new Dictionary<string, string>();
 
         try
         {
             var player = Service.ClientState.LocalPlayer;
 
-            if (player != null)
+            if (Service.Config.ReplaceLocalPlayer && player != null)
             {
-                replacements.Add((GetNamesFull(player.Name.TextValue), Service.Config.FakeNameText));
+                if (!Service.Config.NameDict.TryAdd(player.Name.TextValue, Service.Config.FakeNameText)) 
+                    Service.Config.NameDict[player.Name.TextValue] = Service.Config.FakeNameText;
             }
 
             foreach (var(key, value) in Service.Config.NameDict)
             {
-                replacements.Add((new string[] { key }, value));
+                if (!replacements.ContainsKey(key))
+                    replacements.TryAdd(key, value);
             }
 
             if (Service.ClientState.ClientLanguage == (ClientLanguage) 4 
-                || !Service.Config.AllPlayerReplace) 
+                || !Service.Config.ReplaceAllPlayer) 
                 return;
 
             foreach (var obj in Service.ObjectTable)
@@ -136,7 +127,7 @@ public class Hooker
                 var memberName = member.Name.TextValue;
                 if (memberName == player?.Name.TextValue) continue;
 
-                replacements.Add((new string[] { memberName }, GetChangedName(memberName)));
+                replacements.Add(memberName, GetChangedName(memberName));
             }
 
             if (Service.Condition[ConditionFlag.ParticipatingInCrossWorldPartyOrAlliance])
@@ -144,14 +135,14 @@ public class Hooker
                 foreach (var x in InfoProxyCrossRealm.Instance()->CrossRealmGroups[0].GroupMembers)
                 {
                     var name = Encoding.UTF8.GetString(x.Name);
-                    replacements.Add((new string[] { name }, GetChangedName(name)));
+                    replacements.Add(name, GetChangedName(name));
                 }
             }
             else
             {
                 foreach (var obj in Service.Config.FriendList)
                 {
-                    replacements.Add((new string[] { obj }, GetChangedName(obj)));
+                    replacements.Add(obj, GetChangedName(obj));
                 }
             }
 
@@ -175,6 +166,12 @@ public class Hooker
         finally
         {
             Replacement = replacements;
+#if DEBUG
+            foreach (var VARIABLE in Replacement)
+            {
+                Service.Log.Debug($"Key:{VARIABLE.Key}||||Value:{VARIABLE.Value}");
+            }
+#endif
         }
     }
 
@@ -186,26 +183,6 @@ public class Hooker
             return;
         }
         AtkTextNodeSetTextHook?.Original(node, ChangeName(text));
-    }
-
-    private static string[] GetNamesFull(string name)
-    {
-        var names = name.Split(' ');
-        if (names.Length != 2) return [name];
-
-        var first = names[0];
-        var last = names[1];
-        //var firstShort = first.ToUpper()[0] + ".";
-        //var lastShort = last.ToUpper()[0] + ".";
-
-        return
-        [
-            name,
-            //$"{first} {lastShort}",
-            //$"{firstShort} {last}",
-            //$"{firstShort} {lastShort}",
-            first, last,
-        ];
     }
 
     public static IntPtr ChangeName(IntPtr seStringPtr)
@@ -233,8 +210,7 @@ public class Hooker
             {
                 if (seString.Payloads.All(payload => payload.Type != PayloadType.RawText)) return false;
 
-                return Replacement.Any(pair => ReplacePlayerName(seString, pair.Item1, pair.Item2))
-                    || ReplacePlayerName(seString, Service.Config.CharacterNames, Service.Config.FakeNameText);
+                return Replacement.Any(pair => ReplacePlayerName(seString, pair.Key, pair.Value));
             }
             catch (Exception ex)
             {
@@ -276,36 +252,24 @@ public class Hooker
         return lt.Length != 2 ? str : string.Join(" . ", lt.Select(s => s.ToUpper().FirstOrDefault()));
     }
 
-    private static bool ReplacePlayerName(SeString text, IEnumerable<string> names, string replacement)
+    private static bool ReplacePlayerName(SeString text, string name, string replacement)
     {
-        foreach (var name in names)
+        if (string.IsNullOrEmpty(name)) return false;
+
+        var result = false;
+        foreach (var payLoad in text.Payloads)
         {
-            if (ReplacePlayerNamePrivate(text, name, replacement))
+            if (payLoad is TextPayload load)
             {
-                return true;
+                if (string.IsNullOrEmpty(load.Text)) continue;
+
+                var t = load.Text.Replace(name, replacement);
+                if (t == load.Text) continue;
+
+                load.Text = t;
+                result = true;
             }
         }
-        return false;
-
-        static bool ReplacePlayerNamePrivate(SeString text, string name, string replacement)
-        {
-            if (string.IsNullOrEmpty(name)) return false;
-
-            var result = false;
-            foreach (var payLoad in text.Payloads)
-            {
-                if (payLoad is TextPayload load)
-                {
-                    if (string.IsNullOrEmpty(load.Text)) continue;
-
-                    var t = load.Text.Replace(name, replacement);
-                    if (t == load.Text) continue;
-
-                    load.Text = t;
-                    result = true;
-                }
-            }
-            return result;
-        }
+        return result;
     }
 }

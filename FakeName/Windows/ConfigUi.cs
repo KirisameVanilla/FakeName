@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 
 namespace FakeName.Windows;
@@ -40,7 +41,19 @@ public class ConfigUi : Window, IDisposable
             if (ImGui.BeginTabItem("Settings"))
             {
                 var fakeNameText = Service.Config.FakeNameText;
-                ImGui.Text("Local Character Name");
+                var replaceLocalPlayer = Service.Config.ReplaceLocalPlayer;
+                if (ImGui.Checkbox("Replace Local Character Name##ReplaceLocalPlayer", ref replaceLocalPlayer))
+                {
+                    Service.Config.ReplaceLocalPlayer = replaceLocalPlayer;
+                    Service.Config.SaveConfig();
+                    if (!replaceLocalPlayer)
+                    {
+                        Service.Config.NameDict.Remove(Service.ClientState.LocalPlayer.Name.TextValue);
+                        Service.Config.SaveConfig();
+                    }
+                }
+                // ImGui.SameLine();
+                // ImGui.Text("Replace Local Character Name");
 
                 if (Service.ClientState.LocalPlayer is not null)
                 {
@@ -58,10 +71,10 @@ public class ConfigUi : Window, IDisposable
                     Service.Config.SaveConfig();
                 }
 
-                var allPlayerReplace = Service.Config.AllPlayerReplace;
+                var allPlayerReplace = Service.Config.ReplaceAllPlayer;
                 if (ImGui.Checkbox("Change All Player's Name To Abbr.\n(Only works for SE server)", ref allPlayerReplace))
                 {
-                    Service.Config.AllPlayerReplace = allPlayerReplace;
+                    Service.Config.ReplaceAllPlayer = allPlayerReplace;
                     Service.Config.SaveConfig();
                 }
 
@@ -78,29 +91,32 @@ public class ConfigUi : Window, IDisposable
             {
                 if (Service.Config.Enabled)
                 {
-                    DrawList(Service.Config.NameDict);
+                    DrawList(ref Service.Config.NameDict);
                 }
 
                 ImGui.EndTabItem();
             }
 
-            if (Service.Config.FreeCompanyNameReplace && ImGui.BeginTabItem("FC Names"))
+            if (ImGui.BeginTabItem("FC Names"))
             {
+                using var disabled = ImRaii.Disabled(!Service.Config.FreeCompanyNameReplace);
                 ImGui.TextWrapped("The FC replacement only effect on the nameplate.");
-                DrawList(Service.Config.FreeCompanyNameDict);
+                DrawList(ref Service.Config.FreeCompanyNameDict);
                 ImGui.EndTabItem();
             }
             ImGui.EndTabBar();
         }
     }
 
-    private static void DrawList(List<(string, string)> data)
+    private static void DrawList(ref Dictionary<string, string> data)
     {
 
-        if (!data.Any(p => string.IsNullOrEmpty(p.Item1)))
+        if (!data.Any(p => string.IsNullOrEmpty(p.Key)))
         {
-            data.Add((string.Empty, string.Empty));
+            data.Add(string.Empty, string.Empty);
         }
+
+        var dataList = data.ToList();
 
         if (ImGui.BeginTable("Name Dict things", 3, ImGuiTableFlags.Borders
             | ImGuiTableFlags.Resizable
@@ -124,25 +140,25 @@ public class ConfigUi : Window, IDisposable
             var changedIndex = -1;
 
             var changedValue = (string.Empty, string.Empty);
-            foreach (var(key, value) in data)
+            foreach (var pair in dataList)
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
 
-                var str = key;
-                if (ImGui.InputTextWithHint($"##NameDict Key{index}", "Original Name", ref str, 1024))
+                var strKey = pair.Key;
+                var strV = pair.Value;
+
+                if (ImGui.InputTextWithHint($"##NameDict Key{index}", "Original Name", ref strKey, 1024))
                 {
                     changedIndex = index;
-                    changedValue = (str, value);
+                    changedValue = (strKey, strV);
                 }
                 ImGui.TableNextColumn();
 
-                str = value;
-
-                if (ImGui.InputTextWithHint($"##NameDict Value{index}", "Replace Name", ref str, 1024))
+                if (ImGui.InputTextWithHint($"##NameDict Value{index}", "Replace Name", ref strV, 1024))
                 {
                     changedIndex = index;
-                    changedValue = (key, str);
+                    changedValue = (strKey, strV);
                 }
                 ImGui.TableNextColumn();
 
@@ -161,13 +177,20 @@ public class ConfigUi : Window, IDisposable
             ImGui.EndTable();
             if (removeIndex > -1)
             {
-                data.RemoveAt(removeIndex);
+                dataList.RemoveAt(removeIndex);
+                data = dataList.ToDictionary<string, string>();
                 Service.Config.SaveConfig();
             }
             if (changedIndex > -1)
             {
-                data[changedIndex] = changedValue;
-                Service.Config.SaveConfig();
+                dataList.RemoveAt(changedIndex);
+                try
+                {
+                    dataList.Insert(changedIndex,
+                                    new KeyValuePair<string, string>(changedValue.Item1, changedValue.Item2));
+                    data = dataList.ToDictionary<string, string>();
+                    Service.Config.SaveConfig();
+                } catch {}
             }
         }
     }

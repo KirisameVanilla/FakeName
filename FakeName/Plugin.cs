@@ -18,8 +18,16 @@ public class Plugin : IDalamudPlugin
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
         pluginInterface.Create<Service>();
-        Service.Config = Service.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-
+        try
+        {
+            Service.Config = Service.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        }
+        catch
+        {
+            Service.Config = new Configuration();
+            Service.Config.SaveConfig();
+        }
+        
         Hooker = new Hooker();
         ConfigUi = new ConfigUi();
 
