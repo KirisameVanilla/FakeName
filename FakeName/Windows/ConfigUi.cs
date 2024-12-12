@@ -110,12 +110,6 @@ public class ConfigUi : Window, IDisposable
 
     private static void DrawList(ref Dictionary<string, string> data)
     {
-
-        if (!data.Any(p => string.IsNullOrEmpty(p.Key)))
-        {
-            data.Add(string.Empty, string.Empty);
-        }
-
         var dataList = data.ToList();
 
         if (ImGui.BeginTable("Name Dict things", 3, ImGuiTableFlags.Borders
@@ -132,7 +126,7 @@ public class ConfigUi : Window, IDisposable
             ImGui.TableHeader("Replaced Name");
 
             ImGui.TableNextColumn();
-            ImGui.TableHeader("Delete");
+            ImGui.TableHeader("Operation");
 
             var index = 0;
 
@@ -173,6 +167,16 @@ public class ConfigUi : Window, IDisposable
 
                 index++;
             }
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.TableNextColumn();
+            ImGui.TableNextColumn();
+            ImGui.PushFont(UiBuilder.IconFont);
+            if (ImGui.Button(FontAwesomeIcon.Plus.ToIconString() + $"##addNewName") && !data.ContainsKey(string.Empty))
+            {
+                data.Add(string.Empty, string.Empty);
+            }
+            ImGui.PopFont();
 
             ImGui.EndTable();
             if (removeIndex > -1)
