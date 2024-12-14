@@ -1,0 +1,23 @@
+{
+    "Author": "KirisameVanilla",
+    "Name": "Fake Name",
+    "InternalName": "FakeName",
+    "Description": "Visually changes the player's name.",
+    "ApplicableVersion": "any",
+    "RepoUrl": "https://github.com/KirisameVanilla/FakeName",
+    "Tags": [
+        "name",
+        "ui"
+    ],
+    "CategoryTags": [
+        "ui"
+    ],
+    "DalamudApiLevel": 10,
+    "LoadRequiredState": 0,
+    "LoadSync": false,
+    "CanUnloadAsync": false,
+    "LoadPriority": 0,
+    "IconUrl": "https://raw.githubusercontent.com/KirisameVanilla/FakeName/main/icon.png",
+    "Punchline": "Show a fake name on your game ui.",
+    "AcceptsFeedback": true
+}
