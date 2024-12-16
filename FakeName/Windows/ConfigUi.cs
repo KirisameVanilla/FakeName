@@ -12,6 +12,15 @@ namespace FakeName.Windows;
 
 public class ConfigUi : Window, IDisposable
 {
+    private Dictionary<string, string> languageDictionary = new()
+    {
+        {  "简体中文", "zh-CN" },
+        {  "English", "en-US" }
+    };
+
+    private readonly string[] languageList = ["简体中文", "English"];
+
+    private int selectedIndex = 0;
 
     public ConfigUi()
         : base("FakeName##Config", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
@@ -28,24 +37,24 @@ public class ConfigUi : Window, IDisposable
     public override void Draw()
     {
         var enabled = Service.Config.Enabled;
-
-        if (ImGui.Checkbox("Enabled", ref enabled))
+        var localization = Plugin.Translations;
+        if (ImGui.Checkbox($"{localization["enabled"]}##GlobalEnabled" , ref enabled))
         {
             Service.Config.Enabled = enabled;
             Service.Config.SaveConfig();
         }
-
+        
         using var disabled = ImRaii.Disabled(!Service.Config.Enabled);
-        if (ImGui.BeginTabBar("##tabBar", ImGuiTabBarFlags.Reorderable))
+        if (ImGui.BeginTabBar("##tabBar", ImGuiTabBarFlags.None))
         {
-            if (ImGui.BeginTabItem("Player Names"))
+            if (ImGui.BeginTabItem($"{localization["player names"]}##ConfigTabItem"))
             {
                 var fakeNameText = Service.Config.FakeNameText;
 
                 using (ImRaii.Disabled(Service.ClientState.LocalPlayer is null))
                 {
                     var replaceLocalPlayer = Service.Config.ReplaceLocalPlayer;
-                    if (ImGui.Checkbox("Replace Local Character Name##ReplaceLocalPlayer", ref replaceLocalPlayer))
+                    if (ImGui.Checkbox($"{localization["replace local pc name"]}##ConfigReplaceLocalPlayer", ref replaceLocalPlayer))
                     {
                         Service.Config.ReplaceLocalPlayer = replaceLocalPlayer;
                         Service.Config.SaveConfig();
@@ -57,7 +66,7 @@ public class ConfigUi : Window, IDisposable
                     }
 
                     ImGui.SameLine();
-                    if (ImGui.Button("Reset##Reset Character Name"))
+                    if (ImGui.Button($"{localization["reset to local pc name"]}##ConfigResetToLocalCharacterName"))
                     {
                         Service.Config.FakeNameText = Service.ClientState.LocalPlayer.Name.TextValue;
                         Service.Config.SaveConfig();
@@ -73,7 +82,7 @@ public class ConfigUi : Window, IDisposable
                 if (Service.ClientState.ClientLanguage != (ClientLanguage)4)
                 {
                     var allPlayerReplace = Service.Config.ReplaceAllPlayer;
-                    if (ImGui.Checkbox("Change All Player's Name To Abbr.\n(Only works for SE server)",
+                    if (ImGui.Checkbox($"{localization["change name to abbr"]}##ConfigReplaceAllPlayer",
                                        ref allPlayerReplace))
                     {
                         Service.Config.ReplaceAllPlayer = allPlayerReplace;
@@ -93,10 +102,21 @@ public class ConfigUi : Window, IDisposable
                     Service.Config.FreeCompanyNameReplace = fcNameReplace;
                     Service.Config.SaveConfig();
                 }
-                ImGui.TextWrapped("The FC replacement only effect on the nameplate.");
+                ImGui.TextWrapped($"{localization["fcNameHint"]}");
 
                 using (ImRaii.Disabled(!Service.Config.FreeCompanyNameReplace))
                     DrawList(ref Service.Config.FreeCompanyNameDict, "fcNames");
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem("Language"))
+            {
+                if (ImGui.Combo("##Language", ref selectedIndex, languageList, languageList.Length))
+                {
+                    Service.Config.Language = languageDictionary[languageList[selectedIndex]];
+                    Service.Config.SaveConfig();
+                    Plugin.InitTranslations();
+                }
                 ImGui.EndTabItem();
             }
             ImGui.EndTabBar();
@@ -107,21 +127,24 @@ public class ConfigUi : Window, IDisposable
     {
         var dataList = data.ToList();
 
-        if (ImGui.BeginTable("Name Dict things", 3, ImGuiTableFlags.Borders
+        if (ImGui.BeginTable($"Dict##{id}", 3, ImGuiTableFlags.Borders
             | ImGuiTableFlags.Resizable
             | ImGuiTableFlags.SizingStretchProp))
         {
+            var originalName = Plugin.Translations["Original Name"].ToString();
+            var replacedName = Plugin.Translations["Replaced Name"].ToString();
+            var op = Plugin.Translations["op"].ToString();
             ImGui.TableSetupScrollFreeze(0, 1);
             ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
 
             ImGui.TableNextColumn();
-            ImGui.TableHeader($"Original Name##{id}");
+            ImGui.TableHeader($"{originalName}##{id}");
 
             ImGui.TableNextColumn();
-            ImGui.TableHeader($"Replaced Name##{id}");
+            ImGui.TableHeader($"{replacedName}##{id}");
 
             ImGui.TableNextColumn();
-            ImGui.TableHeader($"Operation##{id}");
+            ImGui.TableHeader($"{op}##{id}");
 
             var index = 0;
 
@@ -137,14 +160,14 @@ public class ConfigUi : Window, IDisposable
                 var strKey = pair.Key;
                 var strV = pair.Value;
 
-                if (ImGui.InputTextWithHint($"##{id}Dict Key{index}", "Original Name", ref strKey, 1024))
+                if (ImGui.InputTextWithHint($"##{id}Dict Key{index}", $"{originalName}", ref strKey, 1024))
                 {
                     changedIndex = index;
                     changedValue = (strKey, strV);
                 }
                 ImGui.TableNextColumn();
 
-                if (ImGui.InputTextWithHint($"##{id}Dict Value{index}", "Replace Name", ref strV, 1024))
+                if (ImGui.InputTextWithHint($"##{id}Dict Value{index}", $"{replacedName}", ref strV, 1024))
                 {
                     changedIndex = index;
                     changedValue = (strKey, strV);

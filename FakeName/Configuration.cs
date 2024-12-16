@@ -18,6 +18,8 @@ public class Configuration : IPluginConfiguration
 
     public Dictionary<string, string> NameDict = [];
     public Dictionary<string, string> FreeCompanyNameDict = [];
+
+    public string Language { get; set; } = "en-US";
     internal void SaveConfig()
     {
         Service.PluginInterface.SavePluginConfig(this);
