@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace FakeName;
 
 public class Localization
@@ -59,6 +53,16 @@ public class Localization
                                         "id": "fcNameHint",
                                         "en-US": "The FC replacement only effect on the nameplate.",
                                         "zh-CN": "部队名替换只对姓名牌(非冒险者名牌)生效。"
+                                    },
+                                    {
+                                        "id": "fcName",
+                                        "en-US": "Free Company Names",
+                                        "zh-CN": "部队名"
+                                    },
+                                    {
+                                        "id": "Change FC Names",
+                                        "en-US": "Change FC Names",
+                                        "zh-CN": "修改部队名"
                                     }
                                 ]
                                 """;

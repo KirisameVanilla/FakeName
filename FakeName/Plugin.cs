@@ -2,7 +2,6 @@ using Dalamud.Plugin;
 using FakeName.Windows;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Newtonsoft.Json.Linq;

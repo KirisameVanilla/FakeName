@@ -12,7 +12,7 @@ namespace FakeName.Windows;
 
 public class ConfigUi : Window, IDisposable
 {
-    private Dictionary<string, string> languageDictionary = new()
+    private readonly Dictionary<string, string> languageDictionary = new()
     {
         {  "简体中文", "zh-CN" },
         {  "English", "en-US" }
@@ -94,10 +94,10 @@ public class ConfigUi : Window, IDisposable
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem("FC Names"))
+            if (ImGui.BeginTabItem($"{localization["fcName"]}"))
             {
                 var fcNameReplace = Service.Config.FreeCompanyNameReplace;
-                if (ImGui.Checkbox("Change FC Names", ref fcNameReplace))
+                if (ImGui.Checkbox($"{localization["Change FC Names"]}", ref fcNameReplace))
                 {
                     Service.Config.FreeCompanyNameReplace = fcNameReplace;
                     Service.Config.SaveConfig();
