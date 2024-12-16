@@ -41,20 +41,21 @@ public class ConfigUi : Window, IDisposable
             if (ImGui.BeginTabItem("Player Names"))
             {
                 var fakeNameText = Service.Config.FakeNameText;
-                var replaceLocalPlayer = Service.Config.ReplaceLocalPlayer;
-                if (ImGui.Checkbox("Replace Local Character Name##ReplaceLocalPlayer", ref replaceLocalPlayer))
-                {
-                    Service.Config.ReplaceLocalPlayer = replaceLocalPlayer;
-                    Service.Config.SaveConfig();
-                    if (!replaceLocalPlayer)
-                    {
-                        Service.Config.NameDict.Remove(Service.ClientState.LocalPlayer.Name.TextValue);
-                        Service.Config.SaveConfig();
-                    }
-                }
 
-                if (Service.ClientState.LocalPlayer is not null)
+                using (ImRaii.Disabled(Service.ClientState.LocalPlayer is null))
                 {
+                    var replaceLocalPlayer = Service.Config.ReplaceLocalPlayer;
+                    if (ImGui.Checkbox("Replace Local Character Name##ReplaceLocalPlayer", ref replaceLocalPlayer))
+                    {
+                        Service.Config.ReplaceLocalPlayer = replaceLocalPlayer;
+                        Service.Config.SaveConfig();
+                        if (!replaceLocalPlayer)
+                        {
+                            Service.Config.NameDict.Remove(Service.ClientState.LocalPlayer.Name.TextValue);
+                            Service.Config.SaveConfig();
+                        }
+                    }
+
                     ImGui.SameLine();
                     if (ImGui.Button("Reset##Reset Character Name"))
                     {
@@ -80,11 +81,7 @@ public class ConfigUi : Window, IDisposable
                     }
                 }
 
-                if (Service.Config.Enabled)
-                {
-                    DrawList(ref Service.Config.NameDict);
-                }
-
+                DrawList(ref Service.Config.NameDict, "charaNames");
                 ImGui.EndTabItem();
             }
 
@@ -98,15 +95,15 @@ public class ConfigUi : Window, IDisposable
                 }
                 ImGui.TextWrapped("The FC replacement only effect on the nameplate.");
 
-                using var fcDisabled = ImRaii.Disabled(!Service.Config.FreeCompanyNameReplace);
-                DrawList(ref Service.Config.FreeCompanyNameDict);
+                using (ImRaii.Disabled(!Service.Config.FreeCompanyNameReplace))
+                    DrawList(ref Service.Config.FreeCompanyNameDict, "fcNames");
                 ImGui.EndTabItem();
             }
             ImGui.EndTabBar();
         }
     }
 
-    private static void DrawList(ref Dictionary<string, string> data)
+    private static void DrawList(ref Dictionary<string, string> data, string id)
     {
         var dataList = data.ToList();
 
@@ -118,13 +115,13 @@ public class ConfigUi : Window, IDisposable
             ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
 
             ImGui.TableNextColumn();
-            ImGui.TableHeader("Original Name");
+            ImGui.TableHeader($"Original Name##{id}");
 
             ImGui.TableNextColumn();
-            ImGui.TableHeader("Replaced Name");
+            ImGui.TableHeader($"Replaced Name##{id}");
 
             ImGui.TableNextColumn();
-            ImGui.TableHeader("Operation");
+            ImGui.TableHeader($"Operation##{id}");
 
             var index = 0;
 
@@ -140,14 +137,14 @@ public class ConfigUi : Window, IDisposable
                 var strKey = pair.Key;
                 var strV = pair.Value;
 
-                if (ImGui.InputTextWithHint($"##NameDict Key{index}", "Original Name", ref strKey, 1024))
+                if (ImGui.InputTextWithHint($"##{id}Dict Key{index}", "Original Name", ref strKey, 1024))
                 {
                     changedIndex = index;
                     changedValue = (strKey, strV);
                 }
                 ImGui.TableNextColumn();
 
-                if (ImGui.InputTextWithHint($"##NameDict Value{index}", "Replace Name", ref strV, 1024))
+                if (ImGui.InputTextWithHint($"##{id}Dict Value{index}", "Replace Name", ref strV, 1024))
                 {
                     changedIndex = index;
                     changedValue = (strKey, strV);
@@ -155,7 +152,7 @@ public class ConfigUi : Window, IDisposable
                 ImGui.TableNextColumn();
 
                 ImGui.PushFont(UiBuilder.IconFont);
-                var result = ImGui.Button(FontAwesomeIcon.TrashAlt.ToIconString() + $"##Remove NameDict Key{index}");
+                var result = ImGui.Button(FontAwesomeIcon.TrashAlt.ToIconString() + $"##Remove {id}Dict Key{index}");
                 ImGui.PopFont();
 
                 if (result)
@@ -170,7 +167,7 @@ public class ConfigUi : Window, IDisposable
             ImGui.TableNextColumn();
             ImGui.TableNextColumn();
             ImGui.PushFont(UiBuilder.IconFont);
-            if (ImGui.Button(FontAwesomeIcon.Plus.ToIconString() + $"##addNewName") && !data.ContainsKey(string.Empty))
+            if (ImGui.Button(FontAwesomeIcon.Plus.ToIconString() + $"##AddNewNameTo{id}") && !data.ContainsKey(string.Empty))
             {
                 data.Add(string.Empty, string.Empty);
             }
