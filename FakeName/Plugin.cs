@@ -2,6 +2,8 @@ using Dalamud.Plugin;
 using FakeName.Windows;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Newtonsoft.Json.Linq;
@@ -83,12 +85,24 @@ public class Plugin : IDalamudPlugin
     public static void InitTranslations()
     {
         Translations = new Dictionary<string, Translation>();
-        var jsonArray = JArray.Parse(Localization.Value);
+        var jsonArray = JArray.Parse(GetManifestJson());
 
         foreach (var jToken in jsonArray)
         {
             if (jToken["id"] == null || jToken["en-US"] == null || jToken["zh-CN"] == null) continue;
             Translations.Add(jToken["id"].ToString(), new Translation(jToken["en-US"].ToString(), jToken["zh-CN"].ToString()));
         }
+    }
+
+    public static string GetManifestJson()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        using var stream = assembly.GetManifestResourceStream("FakeName.Localization.json");
+        if (stream != null)
+        {
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
+        return string.Empty;
     }
 }

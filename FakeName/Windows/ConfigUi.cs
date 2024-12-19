@@ -7,6 +7,7 @@ using System.Numerics;
 using Dalamud.Game;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace FakeName.Windows;
 
@@ -36,29 +37,20 @@ public class ConfigUi : Window, IDisposable
 
     public override void Draw()
     {
-        var enabled = Service.Config.Enabled;
-        var localization = Plugin.Translations;
-        if (ImGui.Checkbox($"{localization["enabled"]}##GlobalEnabled" , ref enabled))
-        {
-            Service.Config.Enabled = enabled;
+        if (ImGui.Checkbox($"{Plugin.Translations["enabled"]}##GlobalEnabled" , ref Service.Config.Enabled))
             Service.Config.SaveConfig();
-        }
         
         using var disabled = ImRaii.Disabled(!Service.Config.Enabled);
         if (ImGui.BeginTabBar("##tabBar", ImGuiTabBarFlags.None))
         {
-            if (ImGui.BeginTabItem($"{localization["player names"]}##ConfigTabItem"))
+            if (ImGui.BeginTabItem($"{Plugin.Translations["player names"]}##ConfigTabItem"))
             {
-                var fakeNameText = Service.Config.FakeNameText;
-
                 using (ImRaii.Disabled(Service.ClientState.LocalPlayer is null))
                 {
-                    var replaceLocalPlayer = Service.Config.ReplaceLocalPlayer;
-                    if (ImGui.Checkbox($"{localization["replace local pc name"]}##ConfigReplaceLocalPlayer", ref replaceLocalPlayer))
+                    if (ImGui.Checkbox($"{Plugin.Translations["replace local pc name"]}##ConfigReplaceLocalPlayer", ref Service.Config.ReplaceLocalPlayer))
                     {
-                        Service.Config.ReplaceLocalPlayer = replaceLocalPlayer;
                         Service.Config.SaveConfig();
-                        if (!replaceLocalPlayer)
+                        if (!Service.Config.ReplaceLocalPlayer)
                         {
                             Service.Config.NameDict.Remove(Service.ClientState.LocalPlayer.Name.TextValue);
                             Service.Config.SaveConfig();
@@ -66,43 +58,44 @@ public class ConfigUi : Window, IDisposable
                     }
 
                     ImGui.SameLine();
-                    if (ImGui.Button($"{localization["reset to local pc name"]}##ConfigResetToLocalCharacterName"))
+                    if (ImGui.Button($"{Plugin.Translations["reset to local pc name"]}##ConfigResetToLocalCharacterName"))
                     {
                         Service.Config.FakeNameText = Service.ClientState.LocalPlayer.Name.TextValue;
                         Service.Config.SaveConfig();
                     }
                 }
 
-                if (ImGui.InputText("##Character Name", ref fakeNameText, 256))
-                {
-                    Service.Config.FakeNameText = fakeNameText;
+                if (ImGui.InputText("##Character Name", ref Service.Config.FakeNameText, 256))
                     Service.Config.SaveConfig();
-                }
 
                 if (Service.ClientState.ClientLanguage != (ClientLanguage)4)
-                {
-                    var allPlayerReplace = Service.Config.ReplaceAllPlayer;
-                    if (ImGui.Checkbox($"{localization["change name to abbr"]}##ConfigReplaceAllPlayer",
-                                       ref allPlayerReplace))
-                    {
-                        Service.Config.ReplaceAllPlayer = allPlayerReplace;
+                    if (ImGui.Checkbox($"{Plugin.Translations["change name to abbr"]}##ConfigReplaceAllPlayer",
+                                       ref Service.Config.ReplaceAllPlayer))
                         Service.Config.SaveConfig();
-                    }
-                }
+                
 
                 DrawList(ref Service.Config.NameDict, "charaNames");
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem($"{localization["fcName"]}"))
+            if (ImGui.BeginTabItem($"{Plugin.Translations["fcName"]}"))
             {
-                var fcNameReplace = Service.Config.FreeCompanyNameReplace;
-                if (ImGui.Checkbox($"{localization["Change FC Names"]}", ref fcNameReplace))
-                {
-                    Service.Config.FreeCompanyNameReplace = fcNameReplace;
+                if (ImGui.Checkbox($"{Plugin.Translations["Change FC Names"]}", ref Service.Config.FreeCompanyNameReplace))
                     Service.Config.SaveConfig();
+                ImGui.SameLine();
+                ImGui.PushFont(UiBuilder.IconFont);
+                ImGui.TextDisabled(FontAwesomeIcon.InfoCircle.ToIconString());
+                ImGui.PopFont();
+                if (ImGui.IsItemHovered())
+                {
+                    using (ImRaii.Tooltip())
+                    {
+                        using (ImRaii.TextWrapPos(ImGui.GetFontSize() * 20f))
+                        {
+                            ImGui.TextUnformatted($"{Plugin.Translations["fcNameHint"]}");
+                        }
+                    }
                 }
-                ImGui.TextWrapped($"{localization["fcNameHint"]}");
 
                 using (ImRaii.Disabled(!Service.Config.FreeCompanyNameReplace))
                     DrawList(ref Service.Config.FreeCompanyNameDict, "fcNames");
@@ -115,7 +108,6 @@ public class ConfigUi : Window, IDisposable
                 {
                     Service.Config.Language = languageDictionary[languageList[selectedIndex]];
                     Service.Config.SaveConfig();
-                    Plugin.InitTranslations();
                 }
                 ImGui.EndTabItem();
             }
