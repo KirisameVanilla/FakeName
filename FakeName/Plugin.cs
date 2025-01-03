@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using Dalamud.Game;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Newtonsoft.Json.Linq;
@@ -12,7 +13,7 @@ namespace FakeName;
 
 public class Plugin : IDalamudPlugin
 {
-    internal Hooker Hooker { get; }
+    internal FakeName FakeName { get; }
     internal ConfigUi ConfigUi { get; init; }
     public readonly WindowSystem WindowSystem = new("FakeName");
     public static Dictionary<string, Translation> Translations = new();
@@ -32,7 +33,7 @@ public class Plugin : IDalamudPlugin
             Service.Config.SaveConfig();
         }
         
-        Hooker = new Hooker();
+        FakeName = new FakeName();
         ConfigUi = new ConfigUi();
 
         WindowSystem.AddWindow(ConfigUi);
@@ -57,7 +58,7 @@ public class Plugin : IDalamudPlugin
     {
         WindowSystem.RemoveAllWindows();
 
-        Hooker.Dispose();
+        FakeName.Dispose();
         ConfigUi.Dispose();
         Service.CommandManager.RemoveHandler(Command);
         GC.SuppressFinalize(this);
@@ -67,17 +68,17 @@ public class Plugin : IDalamudPlugin
     public void ToggleConfigUi() => ConfigUi.Toggle();
     private void OnCommand(string command, string args) => ToggleConfigUi();
 
-    public class Translation(string en, string zh)
+    public class Translation(string english, string chinese)
     {
-        private string En { get; set; } = en;
-        private string Zh { get; set; } = zh;
+        private string English { get; set; } = english;
+        private string Chinese { get; set; } = chinese;
         public override string ToString()
         {
             return Service.Config.Language switch
             {
-                "en-US" => En,
-                "zh-CN" => Zh,
-                _ => En
+                "en-US" => English,
+                "zh-CN" => Chinese,
+                _ => English
             };
         }
     }
@@ -90,7 +91,7 @@ public class Plugin : IDalamudPlugin
         foreach (var jToken in jsonArray)
         {
             if (jToken["id"] == null || jToken["en-US"] == null || jToken["zh-CN"] == null) continue;
-            Translations.Add(jToken["id"].ToString(), new Translation(jToken["en-US"].ToString(), jToken["zh-CN"].ToString()));
+            Translations.Add($"{jToken["id"]}", new Translation($"{jToken["en-US"]}", $"{jToken["zh-CN"]}"));
         }
     }
 

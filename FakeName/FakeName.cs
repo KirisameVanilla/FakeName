@@ -17,7 +17,7 @@ using System.Text;
 
 namespace FakeName;
 
-public class Hooker
+public class FakeName
 {
     private delegate void AtkTextNodeSetTextDelegate(IntPtr node, IntPtr text);
 
@@ -29,7 +29,7 @@ public class Hooker
 
     public static Dictionary<string, string> Replacement { get; private set; } = [];
 
-    internal Hooker()
+    internal FakeName()
     {
         Service.Hook.InitializeFromAttributes(this);
 
@@ -131,13 +131,11 @@ public class Hooker
             }
 
             if (Service.Condition[ConditionFlag.ParticipatingInCrossWorldPartyOrAlliance])
-            {
                 foreach (var x in InfoProxyCrossRealm.Instance()->CrossRealmGroups[0].GroupMembers)
                 {
                     var name = Encoding.UTF8.GetString(x.Name);
                     replacements.Add(name, GetChangedName(name));
                 }
-            }
             else
             {
                 foreach (var obj in Service.Config.FriendList)
@@ -167,10 +165,8 @@ public class Hooker
         {
             Replacement = replacements;
 #if DEBUG
-            foreach (var VARIABLE in Replacement)
-            {
-                Service.Log.Debug($"Key:{VARIABLE.Key}||||Value:{VARIABLE.Value}");
-            }
+            foreach (var replacement in Replacement)
+                Service.Log.Debug($"Key:{replacement.Key}||||Value:{replacement.Value}");
 #endif
         }
     }
@@ -193,9 +189,7 @@ public class Hooker
         {
             var str = GetSeStringFromPtr(seStringPtr);
             if (ChangeSeString(str))
-            {
                 GetPtrFromSeString(str, seStringPtr);
-            }
             return seStringPtr;
         }
         catch (Exception ex)
@@ -208,9 +202,8 @@ public class Hooker
         {
             try
             {
-                if (seString.Payloads.All(payload => payload.Type != PayloadType.RawText)) return false;
-
-                return Replacement.Any(pair => ReplacePlayerName(seString, pair.Key, pair.Value));
+                return seString.Payloads.Any(payload => payload.Type == PayloadType.RawText) 
+                       && Replacement.Any(pair => ReplacePlayerName(seString, pair.Key, pair.Value));
             }
             catch (Exception ex)
             {

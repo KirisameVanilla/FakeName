@@ -7,7 +7,6 @@ using System.Numerics;
 using Dalamud.Game;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace FakeName.Windows;
 
@@ -204,7 +203,11 @@ public class ConfigUi : Window, IDisposable
                                     new KeyValuePair<string, string>(changedValue.Item1, changedValue.Item2));
                     data = dataList.ToDictionary<string, string>();
                     Service.Config.SaveConfig();
-                } catch {}
+                }
+                catch (Exception ex)
+                {
+                    Service.Log.Error(ex, "At ConfigUI.cs #209");
+                }
             }
         }
     }
