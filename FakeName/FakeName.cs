@@ -59,8 +59,9 @@ public class FakeName
                     var nameSe = handler.FreeCompanyTag.TextValue;
                     foreach (var(key, value) in Service.Config.FreeCompanyNameDict)
                     {
-                        if (key != nameSe) continue;
-                        handler.FreeCompanyTag = value;
+                        var fcKey = " «" + key + "»";
+                        if (fcKey != nameSe) continue;
+                        handler.FreeCompanyTag = " «" + value + "»";
                         break;
                     }
                     break;
